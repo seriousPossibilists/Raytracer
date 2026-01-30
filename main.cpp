@@ -8,15 +8,25 @@
 const int width = 800;
 const int height = 800;
 
+double calcZ = 0.0;
+double prevP; int idx;
+std::vector<double> z_val; std::vector<Vec3> colors;
+
+struct Sphere {
+    double radius; 
+    Vec3 color;
+    Vec3 center;
+};
+
+
+std::vector<Sphere> spheres;
 std::vector<Vec3> raytracer_data(width * height);
 
-Vec3 pixel_process(Vec3 coord)
+Vec3 pixel_process(Vec3 coord, Vec3 sphereCenter, double radius, Vec3 color)
 {
     // (bx^2 + by^2)t^2 + 2(axbx + ayby)t + (ax^2+ay^2-r^2) = 0
-    Vec3 sphereCenter; sphereCenter.x = 0.0; sphereCenter.y = 0.0; sphereCenter.z = 0.0;
-    Vec3 lightDirection; lightDirection.x = 1.0; lightDirection.y = 1.0; lightDirection.z = 1.0;
+    Vec3 lightDirection; lightDirection.x = 0.0; lightDirection.y = 0.0; lightDirection.z = 1.0;
     lightDirection = normalize(lightDirection);
-    double radius = 0.5;
 
     Vec3 rayDirection; 
     rayDirection.x = (coord.x / static_cast<double>(width));
@@ -29,26 +39,27 @@ Vec3 pixel_process(Vec3 coord)
     double a = dot(rayDirection, rayDirection);
     double b = 2.0 * dot(rayOrigin - sphereCenter, rayDirection);
     double c = dot(rayOrigin - sphereCenter, rayOrigin - sphereCenter) - (radius * radius);
-    Vec3 result; result.x = 0.0; result.y = 0.0; result.z = 0.0;
+    Vec3 result; result.x = 0.0; result.y = 0; result.z = 0;
 
     // Solving for the hit point (assuming closest hitpoint as valid)
     // Sphere normal is hitpoint - center
 
     double Δ = (b*b) - (4.0*a*c);
+    calcZ = -1.0;
     if (Δ < 0) {return result;}
     double t = (-b - std::sqrt(Δ)) / (2.0*a);
-
     if (t > 0)
     {
         Vec3 normal = (rayOrigin + (t*rayDirection)) - sphereCenter;
         normal = normalize(normal);
-        if(dot(lightDirection, normal) > 0)
+        calcZ = (normal + sphereCenter).z;
+        if (dot(lightDirection, normal) > 0)
         {
-            result.y = 255.0 * dot(lightDirection, normal);
+            result.x = color.x * dot(lightDirection, normal);
+            result.y = color.y * dot(lightDirection, normal);
+            result.z = color.z * dot(lightDirection, normal);
+            return result;
         }
-        else { result.y = 0; }
-        result.x = 0;
-        result.z = 0;
     }
     return result;
 }
@@ -62,9 +73,25 @@ void raytrace()
             Vec3 coord;
             coord.x = (double)i;
             coord.y = (double)j;
-            raytracer_data[(width * j) + i] = pixel_process(coord);
-        }
-    }
+            z_val = {}; colors = {};
+            prevP = -1.0;
+            idx = -1;
+            for(size_t k = 0; k < spheres.size(); k++)
+            {
+                colors.push_back(pixel_process(coord, spheres[k].center, spheres[k].radius, spheres[k].color));
+                z_val.push_back(calcZ);
+            };
+            for(size_t p = 0; p < z_val.size(); p++)
+            {
+                if (z_val[p] > 0 && z_val[p] > prevP)
+                {
+                    prevP = z_val[p]; idx = p;
+                }
+            };
+            if (prevP <= 0) { raytracer_data[(width * j) + i] = { 0.0, 0.0, 0.0 }; }
+            else { raytracer_data[(width * j) + i] = colors[idx]; }
+        };
+    };
 };
 
 
@@ -124,6 +151,12 @@ void main() {
 )";
 
 int main() {
+
+    Sphere s; s.center = { 0.0, 0.0, 0.0 }; s.color = { 255.0, 0.0, 0.0 }; s.radius = 0.5;
+    Sphere t; t.center = { 0.0, 0.2, 1.0 }; t.color = { 0.0, 255.0, 0.0 }; t.radius = 0.1;
+    Sphere u; u.center = { 0.5, 0.0, 0.0 }; u.color = { 0.0, 125.0, 255.0 }; u.radius = 0.3;
+    spheres.push_back(s); spheres.push_back(t); spheres.push_back(u);
+
     GLFWwindow* window;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
