@@ -4,101 +4,43 @@
 #include <iostream>
 #include <vector>
 #include "vec3.h"
+#include "sphere.h"
+#include "ray.h"
 
-const int width = 800;
-const int height = 800;
 
-double calcZ = 0.0;
-double prevP; int idx;
+const int width = 1500;
+const float aspect = 16.f / 9.f;
+const int height = static_cast<int>(width * (1/aspect));
+const int maxBounce = 2;
+
 std::vector<double> z_val; std::vector<Vec3> colors;
-
-struct Sphere {
-    double radius; 
-    Vec3 color;
-    Vec3 center;
-};
-
 
 std::vector<Sphere> spheres;
 std::vector<Vec3> raytracer_data(width * height);
 
-Vec3 pixel_process(Vec3 coord, Vec3 sphereCenter, double radius, Vec3 color)
+void process()
 {
-    // (bx^2 + by^2)t^2 + 2(axbx + ayby)t + (ax^2+ay^2-r^2) = 0
-    Vec3 lightDirection; lightDirection.x = 0.0; lightDirection.y = 0.0; lightDirection.z = 1.0;
-    lightDirection = normalize(lightDirection);
-
-    Vec3 rayDirection; 
-    rayDirection.x = (coord.x / static_cast<double>(width));
-    rayDirection.y = (coord.y / static_cast<double>(height)); rayDirection.z = -1.0;
-    rayDirection = 2.0 * rayDirection; rayDirection.x--; rayDirection.y--;
-    rayDirection = normalize(rayDirection);
-
-    Vec3 rayOrigin; rayOrigin.x = 0.0; rayOrigin.y = 0.0; rayOrigin.z = 2.0;
-
-    double a = dot(rayDirection, rayDirection);
-    double b = 2.0 * dot(rayOrigin - sphereCenter, rayDirection);
-    double c = dot(rayOrigin - sphereCenter, rayOrigin - sphereCenter) - (radius * radius);
-    Vec3 result; result.x = 0.0; result.y = 0; result.z = 0;
-
-    // Solving for the hit point (assuming closest hitpoint as valid)
-    // Sphere normal is hitpoint - center
-
-    double Δ = (b*b) - (4.0*a*c);
-    calcZ = -1.0;
-    if (Δ < 0) {return result;}
-    double t = (-b - std::sqrt(Δ)) / (2.0*a);
-    if (t > 0)
+    // Loops over each screen pixel
+    for (size_t i = 0; i < width; i++)
     {
-        Vec3 normal = (rayOrigin + (t*rayDirection)) - sphereCenter;
-        normal = normalize(normal);
-        calcZ = (normal + sphereCenter).z;
-        if (dot(lightDirection, normal) > 0)
+        for(size_t j = 0; j < height; j++)
         {
-            result.x = color.x * dot(lightDirection, normal);
-            result.y = color.y * dot(lightDirection, normal);
-            result.z = color.z * dot(lightDirection, normal);
-            return result;
-        }
-    }
-    return result;
-}
-
-void raytrace()
-{
-    for(unsigned int i = 0; i < width; ++i)
-    {
-        for(unsigned int j = 0; j < height; ++j)
-        {
-            Vec3 coord;
-            coord.x = (double)i;
-            coord.y = (double)j;
-            z_val = {}; colors = {};
-            prevP = -1.0;
-            idx = -1;
+            double prevZ = -1; int idx = 0;
+            Vec3 coord; 
+            coord.x = static_cast<double>(i) / static_cast<double>(width); 
+            coord.y = static_cast<double>(j) / static_cast<double>(height);
             for(size_t k = 0; k < spheres.size(); k++)
             {
-                colors.push_back(pixel_process(coord, spheres[k].center, spheres[k].radius, spheres[k].color));
-                z_val.push_back(calcZ);
-            };
-            for(size_t p = 0; p < z_val.size(); p++)
-            {
-                if (z_val[p] > 0 && z_val[p] > prevP)
-                {
-                    prevP = z_val[p]; idx = p;
-                }
-            };
-            if (prevP <= 0) { raytracer_data[(width * j) + i] = { 0.0, 0.0, 0.0 }; }
-            else { raytracer_data[(width * j) + i] = colors[idx]; }
-        };
-    };
-};
-
-
-
+                double temp = prevZ;
+                ray_trace(coord, aspect, width, height, spheres[k], &prevZ);
+                if(temp != prevZ) { idx = k; } 
+            }
+            raytracer_data[(width * j) + i] = ray_trace(coord, aspect, width, height, spheres[idx], &prevZ);
+        }
+    }
+}
 
 // Shader compilation
-
 GLuint compile_shader(GLenum type, const char* src)
 {
     GLuint shader = glCreateShader(type);
@@ -152,10 +94,9 @@ void main() {
 
 int main() {
 
-    Sphere s; s.center = { 0.0, 0.0, 0.0 }; s.color = { 255.0, 0.0, 0.0 }; s.radius = 0.5;
-    Sphere t; t.center = { 0.0, 0.2, 1.0 }; t.color = { 0.0, 255.0, 0.0 }; t.radius = 0.1;
-    Sphere u; u.center = { 0.5, 0.0, 0.0 }; u.color = { 0.0, 125.0, 255.0 }; u.radius = 0.3;
-    spheres.push_back(s); spheres.push_back(t); spheres.push_back(u);
+    Sphere s; s.center = { 0.0, 0.0, 0.0 }; s.color = { 255.0, 0.0, 0.0 }; s.radius = 0.25;
+    Sphere t; t.center = { 0.0, -3.3, -0.1 }; t.color = { 0.0, 255.0, 0.0 }; t.radius = 3.0;
+    spheres.push_back(s); spheres.push_back(t); 
 
     GLFWwindow* window;
     glfwInit();
@@ -198,7 +139,7 @@ int main() {
     glEnableVertexAttribArray(1);
 
     std::vector<unsigned char> pixels;
-    raytrace();
+    process();
     for(unsigned int i = 0; i < raytracer_data.size(); i++)
     {
         pixels.push_back((int)raytracer_data[i].x);
