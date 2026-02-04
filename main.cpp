@@ -1,44 +1,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <iostream>
-#include <vector>
 #include "vec3.h"
 #include "sphere.h"
 #include "ray.h"
-
-
-const int width = 1500;
-const float aspect = 16.f / 9.f;
-const int height = static_cast<int>(width * (1/aspect));
-const int maxBounce = 2;
-
-std::vector<double> z_val; std::vector<Vec3> colors;
-
-std::vector<Sphere> spheres;
-std::vector<Vec3> raytracer_data(width * height);
-
-void process()
-{
-    // Loops over each screen pixel
-    for (size_t i = 0; i < width; i++)
-    {
-        for(size_t j = 0; j < height; j++)
-        {
-            double prevZ = -1; int idx = 0;
-            Vec3 coord; 
-            coord.x = static_cast<double>(i) / static_cast<double>(width); 
-            coord.y = static_cast<double>(j) / static_cast<double>(height);
-            for(size_t k = 0; k < spheres.size(); k++)
-            {
-                double temp = prevZ;
-                ray_trace(coord, aspect, width, height, spheres[k], &prevZ);
-                if(temp != prevZ) { idx = k; } 
-            }
-            raytracer_data[(width * j) + i] = ray_trace(coord, aspect, width, height, spheres[idx], &prevZ);
-        }
-    }
-}
+#include "camera.h"
 
 // Shader compilation
 GLuint compile_shader(GLenum type, const char* src)
@@ -94,9 +60,10 @@ void main() {
 
 int main() {
 
-    Sphere s; s.center = { 0.0, 0.0, 0.0 }; s.color = { 255.0, 0.0, 0.0 }; s.radius = 0.25;
-    Sphere t; t.center = { 0.0, -3.3, -0.1 }; t.color = { 0.0, 255.0, 0.0 }; t.radius = 3.0;
-    spheres.push_back(s); spheres.push_back(t); 
+    Sphere s; s.center = { 0.25, -0.25, 1.0 }; s.color = { 1.0, 0.0, 0.0 }; s.radius = 0.15;
+    Sphere t; t.center = { 0.0, -0.25, 0.0 }; t.color = { 0.0, 1.0, 0.0 }; t.radius = 0.5;
+    Sphere l; l.center = { -3.0, 0.0, -1.0 }; l.color = { 1.0, 1.0, 1.0 }; l.radius = 1.0; l.emissionColor = { 1.0, 1.0, 1.0 }; l.emissionStrength = 1.0;
+    spheres.push_back(s); spheres.push_back(t); spheres.push_back(l);
 
     GLFWwindow* window;
     glfwInit();
@@ -142,9 +109,9 @@ int main() {
     process();
     for(unsigned int i = 0; i < raytracer_data.size(); i++)
     {
-        pixels.push_back((int)raytracer_data[i].x);
-        pixels.push_back((int)raytracer_data[i].y);
-        pixels.push_back((int)raytracer_data[i].z);
+        pixels.push_back(255 * (int)raytracer_data[i].x);
+        pixels.push_back(255 * (int)raytracer_data[i].y);
+        pixels.push_back(255 * (int)raytracer_data[i].z);
     };
 
     GLuint texture;
