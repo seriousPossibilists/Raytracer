@@ -60,7 +60,8 @@ void main() {
 
 int main() {
 
-    Sphere floor; floor.center = { 0.0, -1001.0, -3.0 }; floor.color = { 0.8, 0.8, 0.8 }; floor.radius = 1000.0; spheres.push_back(floor);
+    Sphere floor; floor.center = { 0.0, -1001.0, -3.0 }; floor.color = { 0.8, 0.8, 0.8 }; floor.radius = 1000.0; 
+    floor.emissionColor = { 1.0, 1.0, 1.0 }; floor.emissionStrength = 1.0; spheres.push_back(floor);
 
     Sphere a; a.center = { -1.6, 0.0, 5.5 }; a.color = { 1.0, 0.2, 0.2 }; a.radius = 0.5; spheres.push_back(a);
     Sphere b; b.center = {  0.0, 0.0, 5.0 }; b.color = { 0.2, 1.0, 0.2 }; b.radius = 0.5; spheres.push_back(b);
@@ -69,7 +70,7 @@ int main() {
     Sphere d; d.center = { -0.8, 1.2, 5.3 }; d.color = { 1.0, 1.0, 0.2 }; d.radius = 0.3; spheres.push_back(d);
     Sphere e; e.center = {  0.5, 0.8, 5.1 }; e.color = { 0.2, 1.0, 1.0 }; e.radius = 0.3; spheres.push_back(e);
 
-    Sphere light; light.center = { -2.5, 7.5, 5.0 }; light.color = { 1.0, 1.0, 1.0 }; light.radius = 5.0; 
+    Sphere light; light.center = { -2.5, 5.5, 3.0 }; light.color = { 1.0, 1.0, 1.0 }; light.radius = 3.0; 
     light.emissionColor = { 1.0, 1.0, 1.0 }; light.emissionStrength = 1.0; spheres.push_back(light);
 
     GLFWwindow* window;

@@ -6,6 +6,6 @@
 const int width = 1500;
 const float aspect = 16.f / 9.f;
 const int height = static_cast<int>(width * (1/aspect));
-Vec3 cameraPosition = { 0.0, 0.0, 7.0 };
+Vec3 cameraPosition = { 0.0, 0.0, 10.0 };
 
 #endif

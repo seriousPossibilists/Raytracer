@@ -9,7 +9,7 @@
 
 std::vector<Vec3> raytracer_data(width * height);
 const int maxBounce = 5;
-const int numRaysPerPixel = 150;
+const int numRaysPerPixel = 100;
 struct Ray {
     Vec3 dir;
     Vec3 origin;
@@ -87,7 +87,7 @@ Vec3 trace(Ray ray)
         hitInfo info = calc_ray_collision(ray);
         if(info.didHit)
         {
-            ray.origin = info.hitPoint + (info.normalAtHitpoint * 0.0001);
+            ray.origin = info.hitPoint + (info.normalAtHitpoint * 0.001);
             ray.dir = random_hemisphere_reflection(info.normalAtHitpoint);
 
             Vec3 emittedLight = info.hitObj.emissionColor * info.hitObj.emissionStrength;
@@ -107,18 +107,22 @@ void process()
 {
     size_t totalPixels = width * height;
     size_t pixelsProcessed = 0;
+    double viewportHeight = 1.0;
+    double viewportWidth = viewportHeight * aspect;
+
+    double pixelDeltaX = viewportWidth / static_cast<double>(width);
+    double pixelDeltaY = viewportHeight / static_cast<double>(height);
     for (size_t i = 0; i < width; i++)
     {
         for(size_t j = 0; j < height; j++)
         {
-            Vec3 coord; 
-            coord.x = static_cast<double>(i) / static_cast<double>(width); 
-            coord.y = static_cast<double>(j) / static_cast<double>(height);
+            double x = (i + 0.5) * pixelDeltaX - viewportWidth / 2.0;  // center viewport at 0
+            double y = (j + 0.5) * pixelDeltaY - viewportHeight / 2.0;
             Ray ray;
-            ray.dir.x = (coord.x);
-            ray.dir.y = (coord.y);
-            ray.dir = 2.0 * ray.dir; ray.dir.x--; ray.dir.y--;
-            ray.dir.x *= static_cast<double>(aspect);
+            ray.dir.x = x;
+            ray.dir.y = y;
+            // ray.dir = 2.0 * ray.dir; ray.dir.x--; ray.dir.y--;
+            // ray.dir.x *= static_cast<double>(aspect);
             ray.dir.z = -1.0;
             ray.dir = normalize(ray.dir);
 
@@ -150,6 +154,7 @@ void process()
             }
         }
     }
+    std::cout << "\n";
 }
 
 #endif
