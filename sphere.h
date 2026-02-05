@@ -8,8 +8,8 @@ struct Sphere {
     double radius; 
     Vec3 color;
     Vec3 center;
-    Vec3 emissionColor;
-    double emissionStrength;
+    Vec3 emissionColor = {0.0, 0.0, 0.0};
+    double emissionStrength = 0;
 };
 
 std::vector<Sphere> spheres;

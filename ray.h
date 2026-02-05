@@ -2,13 +2,14 @@
 #define RAY_H
 
 #include <iostream>
+#include <random>
 #include "vec3.h"
 #include "sphere.h"
 #include "camera.h"
 
 std::vector<Vec3> raytracer_data(width * height);
-const int maxBounce = 10;
-const int numRaysPerPixel = 100;
+const int maxBounce = 5;
+const int numRaysPerPixel = 5;
 struct Ray {
     Vec3 dir;
     Vec3 origin;
@@ -47,7 +48,7 @@ hitInfo calc_ray_collision(Ray ray)
 
         hitInfo.didHit = true;
         hitInfo.hitObj = sphere;
-        hitInfo.hitPoint = ray.origin + (t*ray.dir);
+        hitInfo.hitPoint = ray.origin + (t * ray.dir);
         Vec3 normal = hitInfo.hitPoint - sphere.center;
         normal = normalize(normal);
         hitInfo.normalAtHitpoint = normal;
@@ -57,54 +58,42 @@ hitInfo calc_ray_collision(Ray ray)
     return prevInfo;
 }
 
-Vec3 random_hemisphere_direction(Vec3 normal)
-{
-    int x = static_cast<int>(static_cast<double>(width) * normal.x);
-    int y = static_cast<int>(static_cast<double>(height) * normal.y);
-    int state = int(x * 967459 + y * 376879);
-    state = (state + uint(7321434)) * state;
-    state *= state;
-    float coord1 =  (float)(static_cast<uint>(state)) * (1.0 / 4294967296.0);
+Vec3 random_in_unit_sphere(std::mt19937& rng) {
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
+    Vec3 p;
+    do {
+        p = { dist(rng), dist(rng), dist(rng) };
+    } while (dot(p, p) >= 1.0);
+    return p;
+}
 
-    state = int(x * 96729 + y * 923879);
-    state = (state + 3221434) * state;
-    state *= state;
-    float coord2 =  (float)(static_cast<uint>(state)) * (1.0 / 4294967296.0);
-
-    state = int(x * 245678 + y * 987879);
-    state = (state + 38494) * state;
-    state *= state;
-    float coord3 =  (float)(static_cast<uint>(state)) * (1.0 / 4294967296.0);
-    Vec3 randDir = { coord1, coord2, coord3 };
-    if(dot(randDir, normal) < 0)
-    {
-        randDir = (-1.0) * randDir;
-    }
-    return normalize(randDir);
+// Generates a random diffuse reflection vector given a normal vector
+Vec3 diffuse_reflection(const Vec3& normal, std::mt19937& rng) {
+    Vec3 random_dir = random_in_unit_sphere(rng);
+    Vec3 diffuse = normal + random_dir;
+    return normalize(diffuse);
 }
 
 Vec3 trace(Ray ray)
 {
-    Vec3 incomingLight = { 0.0, 0.0, 0.0 };
-    Vec3 rayColor = { 1.0, 1.0, 1.0 };
+    Vec3 incomingLight = {0.0, 0.0, 0.0};
+    Vec3 rayColor = {1.0, 1.0, 1.0};
+    std::random_device rd;
+    std::mt19937 rng(rd());
     for(size_t i = 0; i < maxBounce; i++)
     {
         hitInfo info = calc_ray_collision(ray);
         if(info.didHit)
         {
             ray.origin = info.hitPoint;
-            ray.dir = random_hemisphere_direction(info.normalAtHitpoint);
+            ray.dir = diffuse_reflection(info.normalAtHitpoint, rng);
 
             Vec3 emittedLight = info.hitObj.emissionColor * info.hitObj.emissionStrength;
-            emittedLight.x *= rayColor.x; emittedLight.y *= rayColor.y; emittedLight.z *= rayColor.z;
-            incomingLight = incomingLight + emittedLight;
-            rayColor.x *= info.hitObj.color.x; rayColor.y *= info.hitObj.color.y; rayColor.z *= info.hitObj.color.z;
-        }
-        else
-        {
-            break;
+            incomingLight = incomingLight + (emittedLight * rayColor);
+            rayColor = rayColor * info.hitObj.color;
         }
     }
+
     return incomingLight;
 }
 
@@ -132,7 +121,7 @@ void process()
             //hitInfo info = calc_ray_collision(ray);
             //raytracer_data[(width*j) + i] = info.hitObj.color;
             Vec3 totalLight;
-            for(size_t i = 0; i < numRaysPerPixel; i++)
+            for(size_t h = 0; h < numRaysPerPixel; h++)
             {
                 totalLight = totalLight + trace(ray);
             }
@@ -148,8 +137,5 @@ void process()
         }
     }
 }
-
-
-
 
 #endif

@@ -60,9 +60,9 @@ void main() {
 
 int main() {
 
-    Sphere s; s.center = { 0.25, -0.25, 1.0 }; s.color = { 1.0, 0.0, 0.0 }; s.radius = 0.15;
-    Sphere t; t.center = { 0.0, -0.25, 0.0 }; t.color = { 0.0, 1.0, 0.0 }; t.radius = 0.5;
-    Sphere l; l.center = { -3.0, 0.0, -1.0 }; l.color = { 1.0, 1.0, 1.0 }; l.radius = 1.0; l.emissionColor = { 1.0, 1.0, 1.0 }; l.emissionStrength = 1.0;
+    Sphere s; s.center = { 1.0, 0.0, -1.0 }; s.color = { 1.0, 0.0, 0.0 }; s.radius = 0.5;
+    Sphere t; t.center = { -1.0, 0.0, -1.0 }; t.color = { 0.0, 1.0, 0.0 }; t.radius = 0.6;
+    Sphere l; l.center = { 0.0, 3.0, -1.0 }; l.color = { 1.0, 1.0, 1.0 }; l.radius = 1.0; l.emissionColor = { 1.0, 1.0, 1.0 }; l.emissionStrength = 1.0;
     spheres.push_back(s); spheres.push_back(t); spheres.push_back(l);
 
     GLFWwindow* window;
@@ -109,9 +109,9 @@ int main() {
     process();
     for(unsigned int i = 0; i < raytracer_data.size(); i++)
     {
-        pixels.push_back(255 * (int)raytracer_data[i].x);
-        pixels.push_back(255 * (int)raytracer_data[i].y);
-        pixels.push_back(255 * (int)raytracer_data[i].z);
+        pixels.push_back(static_cast<int>(255.0 * raytracer_data[i].x));
+        pixels.push_back(static_cast<int>(255.0 * raytracer_data[i].y));
+        pixels.push_back(static_cast<int>(255.0 * raytracer_data[i].z));
     };
 
     GLuint texture;
