@@ -60,10 +60,17 @@ void main() {
 
 int main() {
 
-    Sphere s; s.center = { 1.0, 0.0, -1.0 }; s.color = { 1.0, 0.0, 0.0 }; s.radius = 0.5;
-    Sphere t; t.center = { -1.0, 0.0, -1.0 }; t.color = { 0.0, 1.0, 0.0 }; t.radius = 0.6;
-    Sphere l; l.center = { 0.0, 3.0, -1.0 }; l.color = { 1.0, 1.0, 1.0 }; l.radius = 1.0; l.emissionColor = { 1.0, 1.0, 1.0 }; l.emissionStrength = 1.0;
-    spheres.push_back(s); spheres.push_back(t); spheres.push_back(l);
+    Sphere floor; floor.center = { 0.0, -1001.0, -3.0 }; floor.color = { 0.8, 0.8, 0.8 }; floor.radius = 1000.0; spheres.push_back(floor);
+
+    Sphere a; a.center = { -1.6, 0.0, 5.5 }; a.color = { 1.0, 0.2, 0.2 }; a.radius = 0.5; spheres.push_back(a);
+    Sphere b; b.center = {  0.0, 0.0, 5.0 }; b.color = { 0.2, 1.0, 0.2 }; b.radius = 0.5; spheres.push_back(b);
+    Sphere c; c.center = {  0.8, 0.7, 5.8 }; c.color = { 0.2, 0.2, 1.0 }; c.radius = 0.5; spheres.push_back(c);
+
+    Sphere d; d.center = { -0.8, 1.2, 5.3 }; d.color = { 1.0, 1.0, 0.2 }; d.radius = 0.3; spheres.push_back(d);
+    Sphere e; e.center = {  0.5, 0.8, 5.1 }; e.color = { 0.2, 1.0, 1.0 }; e.radius = 0.3; spheres.push_back(e);
+
+    Sphere light; light.center = { -2.5, 7.5, 5.0 }; light.color = { 1.0, 1.0, 1.0 }; light.radius = 5.0; 
+    light.emissionColor = { 1.0, 1.0, 1.0 }; light.emissionStrength = 1.0; spheres.push_back(light);
 
     GLFWwindow* window;
     glfwInit();
