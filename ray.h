@@ -8,8 +8,8 @@
 #include "camera.h"
 
 std::vector<Vec3> raytracer_data(width * height);
-const int maxBounce = 5;
-const int numRaysPerPixel = 100;
+const int maxBounce = 10;
+const int numRaysPerPixel = 10;
 struct Ray {
     Vec3 dir;
     Vec3 origin;

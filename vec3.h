@@ -1,6 +1,7 @@
 #ifndef VEC3_H
 #define VEC3_H
 
+#include <string>
 #include <cmath>
 
 struct Vec3 {
