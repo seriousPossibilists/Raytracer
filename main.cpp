@@ -1,36 +1,19 @@
+#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 
-#include "vec3.h"
-#include "sphere.h"
-#include "ray.h"
-#include "camera.h"
+double mouseX, mouseY;
+const int windowWidth = 1000; const double aspect = 16.0 / 9.0;
+const int windowHeight = static_cast<int>((1 / aspect) * windowWidth);
+double cameraX, cameraY, cameraZ;
 
-const char* shaderArr[] = {"", ""};
-
-// Shader compilation
-GLuint compile_shader(GLenum type, const char* src)
-{
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, nullptr);
-    glCompileShader(shader);
-    int success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if(!success) 
-    {
-        char infoLog[512];
-        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::cerr << "Shader compile error: \n" << infoLog << "\n";
-    }
-    return shader;
-}
-
-std::string read_shader_from_source(const char* pathToFile)
+static std::string read_shader_from_source(const char* pathToFile)
 {
     std::ifstream file_stream(pathToFile);
-    if(!file_stream.is_open())
+    if (!file_stream.is_open())
     {
         std::cerr << "Could not read file from source\n";
         return "";
@@ -41,111 +24,158 @@ std::string read_shader_from_source(const char* pathToFile)
     return ss.str();
 }
 
-
-GLuint create_program()
+static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    std::string vertexSrc = read_shader_from_source("src/vertex_shader.vert");
-    std::string fragmentSrc = read_shader_from_source("src/fragment_shader.frag");
-
-    GLuint v = compile_shader(GL_VERTEX_SHADER, vertexSrc.c_str());
-    GLuint f = compile_shader(GL_FRAGMENT_SHADER, fragmentSrc.c_str());
-
-    GLuint program = glCreateProgram();
-    glAttachShader(program, v);
-    glAttachShader(program, f);
-    glLinkProgram(program);
-
-    glDeleteShader(v);
-    glDeleteShader(f);
-
-    return program;
+    glViewport(0, 0, width, height);
 }
 
-int main() {
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (mouseX != xpos)
+    {
+        mouseX = xpos;
+    }
+    if (mouseY != ypos)
+    {
+        mouseY = ypos;
+    }
+}
 
-    Sphere floor; floor.center = { 0.0, -1001.0, -3.0 }; floor.color = { 0.8, 0.8, 0.8 }; floor.radius = 1000.0; 
-    spheres.push_back(floor);
+int main()
+{
+    if (!glfwInit())
+    {
+        std::cout << "Failed to initialize GLFW\n";
+        return -1;
+    }
 
-    Sphere a; a.center = { -1.6, 0.0, 5.5 }; a.color = { 1.0, 0.2, 0.2 }; a.radius = 0.5; spheres.push_back(a);
-    Sphere b; b.center = {  0.0, 0.0, 5.0 }; b.color = { 0.2, 1.0, 0.2 }; b.radius = 0.5; spheres.push_back(b);
-    Sphere c; c.center = {  0.8, 0.7, 5.8 }; c.color = { 0.2, 0.2, 1.0 }; c.radius = 0.5; spheres.push_back(c);
-
-    Sphere d; d.center = { -2.5, 0.0, 5.7 }; d.color = { 1.0, 1.0, 0.2 }; d.radius = 0.3; spheres.push_back(d);
-    Sphere e; e.center = {  0.5, 0.8, 5.1 }; e.color = { 0.2, 1.0, 1.0 }; e.radius = 0.3; spheres.push_back(e);
-
-    Sphere light; light.center = { -7.5, 3.5, -5.0 }; light.color = { 1.0, 1.0, 1.0 }; light.radius = 5; 
-    light.emissionColor = { 1.0, 1.0, 1.0 }; light.emissionStrength = 1.0; spheres.push_back(light);
-
-    GLFWwindow* window;
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    window = glfwCreateWindow(width, height, "Window", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create window\n";
+
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Window", nullptr, nullptr);
+    if (!window)
+    {
+        std::cout << "Failed to create window\n";
         glfwTerminate();
         return -1;
     }
+
     glfwMakeContextCurrent(window);
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Failed to init GLAD\n";
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+
+    // Load OpenGL via GLAD
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std::cout << "Failed to initialize GLAD\n";
         return -1;
     }
-    glViewport(0, 0, width, height);
-    float quad[] = {
-        // pos        // uv
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f,
 
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f,
-        -1.0f,  1.0f,  0.0f, 1.0f
-    };
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                          (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glViewport(0, 0, windowWidth, windowHeight);
 
-    std::vector<unsigned char> pixels;
-    process();
-    for(unsigned int i = 0; i < raytracer_data.size(); i++)
+    std::string stringVertexSource = read_shader_from_source("vertex_shader.vert");
+    const char* vertexShaderSource = stringVertexSource.c_str();
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+    glCompileShader(vertexShader);
+    int success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
     {
-        pixels.push_back(static_cast<int>(255.0 * raytracer_data[i].x));
-        pixels.push_back(static_cast<int>(255.0 * raytracer_data[i].y));
-        pixels.push_back(static_cast<int>(255.0 * raytracer_data[i].z));
-    };
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    GLuint shader = create_program();
-    glUseProgram(shader);
-    glUniform1i(glGetUniformLocation(shader, "screenTexture"), 0);
-
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-        // update pixels here if needed
-        // glTexSubImage2D(...)
-        glClear(GL_COLOR_BUFFER_BIT);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glfwSwapBuffers(window);
+        glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
+        std::cerr << "Vertex shader compilation failed:\n" << infoLog << std::endl;
     }
+
+
+    std::string stringFragmentSource = read_shader_from_source("fragment_shader.frag");
+    const char* fragmentShaderSource = stringFragmentSource.c_str();
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+    glCompileShader(fragmentShader);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+        std::cerr << "Fragment shader compilation failed:\n" << infoLog << std::endl;
+    }
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        std::cerr << "Shader program linking failed:\n" << infoLog << std::endl;
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    clock_t startTime = clock();
+    int frameCount = 0;
+    double fps = 0.0;
+    int mousePosUniformLoc = glGetUniformLocation(shaderProgram, "mousePos");
+    int windowWidthUniformLoc = glGetUniformLocation(shaderProgram, "windowWidth");
+    int windowHeightUniformLoc = glGetUniformLocation(shaderProgram, "windowHeight");
+    int cameraPosUniformLoc = glGetUniformLocation(shaderProgram, "cameraPos");
+    while (!glfwWindowShouldClose(window))
+    {
+        frameCount++;
+        clock_t currentTime = clock();
+        if (currentTime - startTime >= CLOCKS_PER_SEC)
+        {
+            fps = frameCount;
+            frameCount = 0;
+            startTime = currentTime;
+            std::cout << fps << "\n";
+        }
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glUseProgram(shaderProgram);
+
+        glUniform2f(mousePosUniformLoc, mouseX, mouseY);
+        glUniform1i(windowWidthUniformLoc, windowWidth);
+        glUniform1i(windowHeightUniformLoc, windowHeight);
+        glUniform3f(cameraPosUniformLoc, cameraX, cameraY, cameraZ);
+            
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            cameraZ -= 0.01f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            cameraX -= 0.01f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            cameraZ += 0.01f;   
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            cameraX += 0.01f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            cameraY += 0.01f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            cameraY -= 0.01f;
+        }
+    }
+
+    glDeleteVertexArrays(1, &vao);
+    glDeleteProgram(shaderProgram);
+
     glfwTerminate();
     return 0;
 }
